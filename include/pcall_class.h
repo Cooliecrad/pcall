@@ -85,7 +85,7 @@ public:
             *((pcall_num_t*)dst) = number; // 包头：pcall号
             dst += sizeof(pcall_num_t); // 记得移动指针 
             // 通过pcall号调用编码函数
-            return pc[number-1].enc(iss, dst, length);
+            return pc[number-1].enc(iss, dst, length) + 1;
         }
         return 0;
     }
