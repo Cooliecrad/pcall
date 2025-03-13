@@ -1,0 +1,31 @@
+#include "client.h"
+
+#define __PCALL_CLIENT
+#include "table.h"
+
+#include <sstream>
+
+static ps::pcall::Client client {pcall_init()};
+static std::ostringstream oss;
+
+int parse(const char *user, uint8_t *output, int lenght)
+{
+    return client.parse(user, output, lenght) ? 0 : 1;
+}
+
+int generate_help()
+{
+    std::vector<char> code_list;
+    oss.clear();
+    client.code_list(code_list);
+    for (char code : code_list)
+        oss << client.describe(code) << '\n';
+    return oss.str().length() + 1; // 带上\0
+}
+
+void copy_help(char *buffer)
+{
+    auto len = oss.str().length();
+    memcpy(buffer, oss.str().c_str(), len);
+    buffer[len-1] = 0;
+}

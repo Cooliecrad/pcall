@@ -11,3 +11,11 @@ include_directories(include)
 add_executable(test demo/test_client.cpp
                     demo/test_server.cpp
                     demo/test.cpp)
+
+# 模板库
+add_library(client SHARED client/client.cpp)
+target_include_directories(client PRIVATE client)
+
+# 模板.C程序
+add_executable(example_client client/cclient.c)
+target_link_libraries(example_client PRIVATE client)

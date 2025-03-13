@@ -94,7 +94,7 @@ public:
         auto number = map[code - __PCALL_CODE_MINIMUM];
         if (number != 0)
         {
-            return pc[number].note;
+            return pc[number-1].note;
         }
         return nullptr;
     }

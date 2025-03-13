@@ -1,11 +1,14 @@
-#define __PCALL_SERVER
-#include "test.h"
+/**
+ * @brief 最重要的部分：声明本文件为服务器（第四行）和引用共享的头文件（第五行）
+ */
+#define __PCALL_SERVER // 声明本文件为服务器
+#include "test_table.h" // 引用共享的头文件
 
+#include "test.h"
 #include <cstdio>
-#include "test_table.h"
 
 /**
- * @brief 被调用方/后端/下位机
+ * @brief 被调用方的函数实现
  */
 
 void move(float dist, uint16_t spd, uint8_t acc)
@@ -27,6 +30,10 @@ void arm_r_move(float dist, uint16_t spd, uint8_t acc)
 {
     printf("R旋转 dist = %f, spd = %d, acc = %d\n", dist, spd, acc);
 }
+
+/**
+ * @brief 被调用方处理PCall的中间格式（data）
+ */
 
 void test_server(const uint8_t *data)
 {
