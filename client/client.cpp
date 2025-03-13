@@ -19,7 +19,9 @@ int generate_help()
     oss.clear();
     client.code_list(code_list);
     for (char code : code_list)
-        oss << client.describe(code) << '\n';
+    {
+        oss << code << ": " << client.describe(code) << '\n';
+    }
     return oss.str().length() + 1; // 带上\0
 }
 
