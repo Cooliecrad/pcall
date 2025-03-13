@@ -20,12 +20,12 @@ class Client:
         elif name == 'posix':
             pass
 
-    def parse(self, code: str) -> Optional[bytearray]:
+    def parse(self, code: str) -> Optional[tuple[bytearray, int]]:
         """解析语句，如果解析失败，返回None
         """
-        buffer = bytearray(self.__bf_size)
+        buffer = bytes(self.__bf_size)
         ret = self.__lib.parse(code, buffer, self.__bf_size)
-        return buffer if ret == 0 else None
+        return buffer, ret if ret != 0 else None
 
     def help(self) -> str:
         """读取帮助文档

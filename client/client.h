@@ -16,7 +16,7 @@ extern "C" {
  * @param user 用户的字符串输入
  * @param output 用来保存用户输出
  * @param length 输出数组的长度
- * @return 如果超长，将不会输出
+ * @return 解析出来的长度
  */
 int parse(const char *user, uint8_t *output, int length);
 

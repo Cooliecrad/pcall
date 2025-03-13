@@ -10,7 +10,7 @@ static std::ostringstream oss;
 
 int parse(const char *user, uint8_t *output, int lenght)
 {
-    return client.parse(user, output, lenght) ? 0 : 1;
+    return client.parse(user, output, lenght);
 }
 
 int generate_help()

@@ -27,7 +27,7 @@ namespace pcall
 struct pcall
 {
 #   ifdef __PCALL_CLIENT
-        bool (*enc)(std::istringstream& iss, uint8_t *data, int length);
+        int (*enc)(std::istringstream& iss, uint8_t *data, int length);
         const char *note;
         const char code;
 
@@ -67,8 +67,12 @@ public:
 
     /**
      * @brief 解析单个指令
+     * @param src 输入的字符串
+     * @param dst 储存解析结果的数组
+     * @param length 数组的长度
+     * @return 解析并储存的数据长度，如果解析失败，返回0
      */
-    bool parse(const std::string& src, uint8_t *dst, int length) const
+    int parse(const std::string& src, uint8_t *dst, int length) const
     {
         std::istringstream iss {src};
         // 读取code
@@ -83,7 +87,7 @@ public:
             // 通过pcall号调用编码函数
             return pc[number-1].enc(iss, dst, length);
         }
-        return false;
+        return 0;
     }
 
     /**

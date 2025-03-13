@@ -29,7 +29,7 @@
 
 #ifdef __PCALL_CLIENT_LENGTH_CHECK
 #define __PCALL_LENGTH_CHECK(_argc, ...) \
-    if (length < (__pcall_length(_argc, __VA_ARGS__))) return false
+    if (length < (__pcall_length(_argc, __VA_ARGS__))) return 0
 #else
 #define __PCALL_LENGTH_CHECK(...) 
 #endif
@@ -38,11 +38,11 @@
  * @brief 调用方编码数据的实现
  */
 #define __pcall_func_impl(_func, _func_name, _argc, ...) \
-bool _func_name(std::istringstream& iss, uint8_t *data, int length) \
+int _func_name(std::istringstream& iss, uint8_t *data, int length) \
 { \
     __PCALL_LENGTH_CHECK(_argc, __VA_ARGS__); \
     __pcall_pak(iss, data, _argc, __VA_ARGS__) \
-    return true; \
+    return (__pcall_length(_argc, __VA_ARGS__)); \
 }
 
 #endif
