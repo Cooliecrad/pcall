@@ -2,7 +2,7 @@
  * @brief 最重要的部分：声明本文件为服务器（第四行）和引用共享的头文件（第五行）
  */
 #define __PCALL_CLIENT
-#include "test_table.h"
+#include "table.h"
 
 #include "test.h"
 #include <string>

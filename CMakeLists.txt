@@ -16,6 +16,6 @@ add_executable(test demo/test_client.cpp
 add_library(client SHARED client/client.cpp)
 target_include_directories(client PRIVATE client)
 
-# 模板.C程序
-add_executable(example_client client/cclient.c)
+# 模板.C++程序
+add_executable(example_client client/cclient.cpp)
 target_link_libraries(example_client PRIVATE client)

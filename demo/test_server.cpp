@@ -1,19 +1,19 @@
+#include "test.h"
+#include <cstdio>
+
 /**
  * @brief 最重要的部分：声明本文件为服务器（第四行）和引用共享的头文件（第五行）
  */
 #define __PCALL_SERVER // 声明本文件为服务器
-#include "test_table.h" // 引用共享的头文件
-
-#include "test.h"
-#include <cstdio>
+#include "table.h" // 引用共享的头文件
 
 /**
  * @brief 被调用方的函数实现
  */
 
-void move(float dist, uint16_t spd, uint8_t acc)
+void move(float dist)
 {
-    printf("前进 dist = %f, spd = %d, acc = %d\n", dist, spd, acc);
+    printf("前进 dist = %f\n", dist);
 }
 
 void arm_x_move(float dist, uint16_t spd, uint8_t acc)

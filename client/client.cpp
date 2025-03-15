@@ -1,7 +1,7 @@
 #include "client.h"
 
 #define __PCALL_CLIENT
-#include "table.h"
+#include "mmcar_table.h"
 
 #include <sstream>
 
@@ -10,7 +10,7 @@ static std::ostringstream oss;
 
 int parse(const char *user, uint8_t *output, int lenght)
 {
-    return client.parse(user, output, lenght);
+    return client.parse(std::string{user}, output, lenght);
 }
 
 int generate_help()

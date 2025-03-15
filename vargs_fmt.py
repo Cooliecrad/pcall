@@ -1,21 +1,26 @@
-from sys import argv
+def replace_content(src: str, index: int, content: str) -> str:
+    """找到src中 /* +UNPAK{index} */ 和 /* -UNPAK{index} */ 之间的内容，
+    并且用content替换
 
-def pcall_base(length) -> str:
-    result = """#ifndef __PCALL_BASE_H__
-#define __PCALL_BASE_H__
+    Args:
+        src (str): 原始内容
+        index (int): 要替换的下标
+        content (str): 要替换的内容
 
-/**
- * @brief 基础的宏
- */
+    Returns:
+        str: 替换完的内容
+    """
+    start_label = f"/* +UNPAK{index} */"
+    end_label = f"/* -UNPAK{index} */"
+    start_index = src.index(start_label) + len(start_label)
+    end_index = src.index(end_label)
+    return src[:start_index] + '\n' + content + src[end_index:]
 
-#define __pcall_wrap(x) (x)
-#define __pcall_concat(a, b) a ## b
+# pcall_base.h -----------------------------------------------------------------
 
-"""
-    result += gen_counter(length) + "\n"
-    result += gen_length(length) + "\n"
-    result += "#endif"
-    return result
+def pcall_base(src, length) -> str:
+    src = replace_content(src, 0, gen_counter(length))
+    return replace_content(src, 1, gen_length(length))
 
 def gen_counter(length):
     count = f"#define __pcall_count(...) __pcall_counter({length+1}, ##__VA_ARGS__, "
@@ -30,214 +35,19 @@ def gen_counter(length):
     return count + counter
 
 def gen_length(length):
-    result = """#define __pcall_length(_argc, ...) __pcall_concat(__pcall_length, _argc)(__VA_ARGS__)
-#define __pcall_length0(...) (0)
-"""
+    result = ""
     for x in range(1, length+1):
         result += f"#define __pcall_length{x}(_arg{x}, ...) (sizeof(_arg{x})+(__pcall_length{x-1}(__VA_ARGS__)))\n"
     return result
 
-def pcall_cli(length) -> str:
-    result = """#ifndef __PCALL_CLI_H__
-#define __PCALL_CLI_H__
+# pcall_cli.h ------------------------------------------------------------------
 
-#include "pcall_base.h"
+def pcall_cli(src, length) -> str:
+    src = replace_content(src, 0, __pcall_pak(length))
+    return replace_content(src, 1, __pcall_impl(length, True))
 
-/**
- * @brief pcall客户端实现
- */
-
-"""
-    result += __pcall_pak(length)
-    result += """
-
-#ifdef __PCALL_CLIENT_LENGTH_CHECK
-#define __PCALL_LENGTH_CHECK(_argc, ...) \\
-    if (length < (__pcall_length(_argc, __VA_ARGS__))) return false
-#else
-#define __PCALL_LENGTH_CHECK(...) 
-#endif
-
-/**
- * @brief 调用方编码数据的实现
- */
-#define __pcall_func_impl(_func, _func_name, _argc, ...) \\
-bool _func_name(std::istringstream& iss, uint8_t *data, int length) \\
-{ \\
-    __PCALL_LENGTH_CHECK(_argc, __VA_ARGS__); \\
-    __pcall_pak(iss, data, _argc, __VA_ARGS__) \\
-    return true; \\
-}
-
-#endif
-"""
-    return result
-
-def __pcall_pak(length):
-    result = "#define __pcall_pak(_src, _dst, _argc, ...) __pcall_concat(__pcall_pak, _argc)(_src, _dst, __VA_ARGS__)\n#define __pcall_pak0(_src, _dst, ...)\n"
-    for x in range(1, length+1):
-        result += f"\
-#define __pcall_pak{x}(_src, _dst, _arg{x}, ...) _src >> ((_arg{x}&)*_dst); _dst += sizeof(_arg{x});\\\n\
-                                             __pcall_pak{x-1}(_src, _dst, __VA_ARGS__)\n"
-    return result
-
-
-def pcall_srv(length):
-    result = """#ifndef __PCALL_SRV_H__
-#define __PCALL_SRV_H__
-
-#include "pcall_base.h"
-
-/**
- * @brief pcall服务端实现
- */
-
-"""
-    result += __pcall_unpak(length) + "\n"
-    result += __pcall_execute(length) + "\n"
-    result += """
-#ifdef __PCALL_SERVER_LENGTH_CHECK
-#define __PCALL_LENGTH_CHECK(_argc, ...) \\
-    if (length < (__pcall_length(_argc, __VA_ARGS__))) return false
-#else
-#define __PCALL_LENGTH_CHECK(...) 
-#endif
-
-/**
- * @brief 被调用方解码并执行的实现
- */
-#define __pcall_func_impl(_func, _func_name, _argc, ...) \\
-bool _func_name(const uint8_t *data, int length) \\
-{ \\
-    __PCALL_LENGTH_CHECK(_argc, __VA_ARGS__); \\
-    __pcall_unpak(_func, _argc, __VA_ARGS__) \\
-    __pcall_execute(_func, _argc) \\
-    return true; \\
-}
-
-#endif
-"""
-    return result
-
-def __pcall_execute(length):
-    result = "#define __pcall_execute(_func, _argc) __pcall_concat(__pcall_execute, _argc)(_func)\n#define __pcall_execute0(_func) _func();\n"
-    for x in range(1, length+1):
-        result += f"#define __pcall_execute{x}(_func) _func("
-        for index in range(x, 1, -1):
-            result += f"tmp{index}, "
-        result += f"tmp{1});\n"
-    return result
-
-def __pcall_unpak(length):
-    result = "\
-#define __pcall_unpak(_func, _argc, ...) __pcall_concat(__pcall_unpak, _argc)(_func, __VA_ARGS__)\n\
-#define __pcall_unpak0(_func, ...)\n"
-    for x in range(1, length+1):
-        result += f"\
-#define __pcall_unpak{x}(_func, _arg{x}, ...) \\\n\
-    _arg{x} tmp{x} = *(_arg{x}*)data; data += sizeof(_arg{x});\\\n\
-    __pcall_unpak{x-1}(_func, __VA_ARGS__)\n"
-    return result
-
-
-def pcall(length):
-    result = """#ifndef __PCALL_H__
-#define __PCALL_H__
-
-#include "pcall_class.h"
-
-/**
- * @brief PCALL - Ptil0psis's Call - 简单的远程调用实现
- * @note 实现从字符串编码 'foo 100 200' 到二进制格式到函数调用 foo(100, 200)
- *            ----------------------  ---------- ---------------------
- *               用户指令(客户端)        传输用格式        服务端调用
- */
-
-/**
- * @brief C/S使用不同的头文件实现，减少开销
- */
-#ifdef __PCALL_CLIENT
-#   include "pcall_cli.h"
-#endif
-#ifdef __PCALL_SERVER
-#   include "pcall_srv.h"
-#endif
-
-/**
- * @brief 不应该在一个文件中同时使用Client和Server！
- */
-#ifdef __PCALL_CLIENT
-#   ifdef __PCALL_SERVER
-        static_assert(false, "Client和Server不应该在同一个文件中存在！")
-#   endif
-#endif
-#ifdef __PCALL_SERVER
-#   ifdef __PCALL_CLIENT
-        static_assert(false, "Client和Server不应该在同一个文件中存在！")
-#   endif
-#endif
-
-
-/**
- * @brief 将pcall宏中__VA_ARGS__拆开成参数和注释，产生对应的函数和注释文本
- */
-"""
-    result += __pcall_impl(length)
-    result += """/**
- * -声明相关---------------------------------------------------------------------
- */
-
-/**
- * @note 将pcall实现放在一个匿名名字空间，避免产生的变量名污染
- */
-#define pcall_begin() namespace {
-
-/**
- * @brief 实现pcall
- */
-#define pcall_item(_func, _desc, ...) \\
-        __pcall_impl(_func, _desc, __pcall_##_func, __pcall_count(__VA_ARGS__), __VA_ARGS__)
-
-#define pcall_end() }
-
-
-/**
- * @brief 实现pcall表构建
- */
-
-#define pcall_table_being() namespace { ps::pcall::pcall PCALL_TABLE[] = {
-
-/**
- * @brief pcall在表中注册
- */
-#define pcalll_table_item(_ch, _func) __pcall_table_item(_ch, __pcall_##_func)
-#ifdef __PCALL_CLIENT
-#   define __pcall_table_item(_ch, _name) {_name, _name##_describe, _ch}
-#else
-#   define __pcall_table_item(_ch, _name) {_name}
-#endif
-
-#ifdef __PCALL_CLIENT // 加一避免零除！
-#   define pcall_table_end() }; ps::pcall::Client pcall_init() {\\
-        return ps::pcall::Client {PCALL_TABLE,\\
-                                  sizeof(PCALL_TABLE)/sizeof(ps::pcall::pcall)};}}
-#else
-#   define pcall_table_end() }; ps::pcall::Server pcall_init() {\\
-        return ps::pcall::Server {PCALL_TABLE};}}
-#endif
-
-#endif 
-
-"""
-    return result
-
-def __pcall_impl(length):
-    result = f'\
-#define __pcall_impl(_func, _desc, _func_name, _argc, ...) \\\n\
-        __pcall_concat(__pcall_impl, _argc)(_func, _desc, _func_name,\\\n\
-                                            _argc, __VA_ARGS__)\n\
-#define __pcall_impl0(_func, _desc, _func_name, _argc) \\\n\
-        const char * _func_name##_describe = _desc##;\n'
+def __pcall_impl(length, client):
+    result = ""
     for x in range(1, length+1):
         line0 = f"#define __pcall_impl{x}(_func, _desc, _func_name, _argc"
         line1 = f"        __pcall_func_impl(_func, _func_name, _argc"
@@ -247,19 +57,59 @@ def __pcall_impl(length):
             line0 += f", _arg{index}, _desc{index}"
             line1 += f", _arg{index}"
             line2_r += f'#_arg{index} ": " _desc{index} " \\n"'
-        line0 += ")\\\n"
-        line1 += ")\\\n"
-        line2_r += ";\n"
-        result += line0 + line1 + line2_l + line2_r
+        line0 += ")"
+        line1 += ")"
+        line2_r += ";"
+        if client:
+            result += line0 + "\\\n" + line1 + "\\\n" + line2_l + line2_r + "\n"
+        else:
+            result += line0 + "\\\n" + line1 + "\n"
+    return result
+
+def __pcall_pak(length):
+    result = ""
+    for x in range(1, length+1):
+        result += f"\
+#define __pcall_pak{x}(_src, _dst, _arg, ...) \\\n\
+    _arg tmp; _src >> tmp; memcpy(data, &tmp, sizeof(_arg)); _dst += sizeof(_arg);\n"
+    return result
+
+# pcall_srv.h ------------------------------------------------------------------
+
+def pcall_srv(src, length):
+    src = replace_content(src, 0, __pcall_unpak(length))
+    src = replace_content(src, 1, __pcall_execute(length))
+    src = replace_content(src, 2, __pcall_impl(length, False))
+    return src
+
+def __pcall_execute(length):
+    result = ""
+    for x in range(1, length+1):
+        result += f"#define __pcall_execute{x}(_func) _func("
+        for index in range(x, 1, -1):
+            result += f"tmp{index}, "
+        result += f"tmp1);\n"
+    return result
+
+def __pcall_unpak(length):
+    result = ""
+    for x in range(1, length+1):
+        result += f"\
+#define __pcall_unpak{x}(_func, _arg{x}, ...) \\\n\
+    _arg{x} tmp{x}; memcpy(&tmp{x}, data, sizeof(_arg{x})); data += sizeof(_arg{x});\\\n\
+    __pcall_unpak{x-1}(_func, __VA_ARGS__)\n"
     return result
 
 def write(func, length, suffix):
+    with open(f"include/pcall{suffix}.h", "r", encoding='utf-8') as fp:
+        src = fp.read()
+    
+    src = func(src, length)
     with open(f"build/pcall{suffix}.h", "w", encoding='utf-8') as fp:
-        fp.write(func(length))
+        fp.write(src)
 
 if __name__ == "__main__":
     length = 8
     write(pcall_base, 8, "_base")
     write(pcall_cli, 8, "_cli")
     write(pcall_srv, 8, "_srv")
-    write(pcall, 8, "")

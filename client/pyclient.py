@@ -18,14 +18,17 @@ class Client:
         if name == 'nt':
             self.__lib = CDLL(filename, winmode=0)
         elif name == 'posix':
-            pass
+            self.__lib = CDLL(filename)
 
-    def parse(self, code: str) -> Optional[tuple[bytearray, int]]:
+    def parse(self, code: str) -> Optional[bytearray]:
         """解析语句，如果解析失败，返回None
         """
         buffer = bytes(self.__bf_size)
         ret = self.__lib.parse(code, buffer, self.__bf_size)
-        return buffer, ret if ret != 0 else None
+        if ret > 0:
+            return buffer[: ret]
+        else:
+            return None
 
     def help(self) -> str:
         """读取帮助文档
@@ -38,3 +41,5 @@ class Client:
 if __name__ == "__main__":
     client = Client("build/libclient.dll")
     print(client.help())
+    user = input().encode('utf-8')
+    print(client.parse(user))

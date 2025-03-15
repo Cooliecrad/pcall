@@ -10,7 +10,7 @@
 /**
  * @brief PCall号的数据类型，影响PCall的最大数量。建议使用无符号数
  */
-using pcall_num_t = uint8_t;
+using pcall_num_t = uint32_t;
 
 /**
  * @brief 在服务器启用严格的长度检查

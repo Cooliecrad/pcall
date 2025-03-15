@@ -30,18 +30,10 @@ struct pcall
         int (*enc)(std::istringstream& iss, uint8_t *data, int length);
         const char *note;
         const char code;
-
-#       ifdef __PCALL_CLIENT_LENGTH_CHECK
-            const int length;
-#       endif
 #   endif
 
 #   ifdef __PCALL_SERVER
         bool (*dec)(const uint8_t *data, int length);
-
-#       ifdef __PCALL_SERVER_LENGTH_CHECK
-            const int length;
-#       endif
 #   endif
 
 
@@ -143,6 +135,7 @@ public:
         if (number != 0)
         {
             dst += sizeof(pcall_num_t);
+            length -= sizeof(pcall_num_t);
             // 通过pcall号调用函数
             pc[number-1].dec(dst, length);
             return true;
